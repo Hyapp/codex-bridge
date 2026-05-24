@@ -1568,9 +1568,13 @@ async function runWebFetchLoop({ baseRequest, initialMessages, upstreamUrl, upst
       return { role: "tool", tool_call_id: tc.id, content };
     }));
 
+    // Carry forward reasoning_content from the upstream response so the next
+    // loop iteration doesn't 400 on a missing reasoning_content in thinking mode.
+    const assistMsg = { role: "assistant", content: null, tool_calls: webFetchCalls };
+    if (msg?.reasoning_content) assistMsg.reasoning_content = msg.reasoning_content;
     loopMessages = [
       ...loopMessages,
-      { role: "assistant", content: null, tool_calls: webFetchCalls },
+      assistMsg,
       ...results,
     ];
   }
@@ -1747,6 +1751,19 @@ async function handleOaiCompatChatCompletions(req, provider, body, res) {
     delete body.reasoning_effort;
     delete body.reasoning;
     applyEffortTranslation(body, ccEffort, provider);
+  }
+
+  // DeepSeek thinking-mode safety net for the Chat Completions path.
+  // Same logic as the Responses path in responsesRequestToChatCompletions.
+  if (provider === "deepseek" && body.thinking?.type !== "disabled") {
+    const hasMissingReasoning = body.messages.some(
+      (m) => m.role === "assistant" && Array.isArray(m.tool_calls) && m.tool_calls.length > 0 && !m.reasoning_content
+    );
+    if (hasMissingReasoning) {
+      body.thinking = { type: "disabled" };
+      delete body.reasoning_effort;
+      log.info("[proxy] deepseek chat/completions: assistant tool_calls without reasoning_content -> forcing thinking:disabled");
+    }
   }
 
   const ccHasUrls = conversationHasUrls(validated);

@@ -1,0 +1,98 @@
+name: Release
+
+on:
+  push:
+    tags: 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build SEA blob
+        shell: bash
+        run: |
+          node -e "fs.writeFileSync('sea-config.json',JSON.stringify({main:'proxy.mjs',output:'sea-prep.blob'}))"
+
+      - name: Generate SEA blob
+        shell: bash
+        run: node --experimental-sea-config sea-config.json
+
+      - name: Inject blob into Node binary
+        shell: bash
+        run: |
+          EXT=""
+          [[ "${{ runner.os }}" == "Windows" ]] && EXT=".exe"
+          BINARY="codex-bridge${EXT}"
+
+          cp "$(which node)" "${BINARY}"
+
+          # Windows: remove digital signature before injection
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            SIGTOOL=$(find "C:/Program Files (x86)/Windows Kits/10/bin" -name "signtool.exe" 2>/dev/null | head -1)
+            if [[ -n "$SIGTOOL" ]]; then
+              "${SIGTOOL}" remove /s "${BINARY}"
+            else
+              echo "warning: signtool not found, attempting postject without signature removal"
+            fi
+          fi
+
+          npm install -g postject
+          postject "${BINARY}" NODE_SEA_BLOB sea-prep.blob --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2
+          echo "binary=${BINARY}" >> "$GITHUB_ENV"
+
+      - name: Package portable release
+        shell: bash
+        run: |
+          EXT=""
+          [[ "${{ runner.os }}" == "Windows" ]] && EXT=".exe"
+          PKG="codex-bridge-${{ runner.os }}-${{ github.ref_name }}"
+
+          mkdir -p "${PKG}"
+          cp "codex-bridge${EXT}" "${PKG}/"
+          cp LICENSE "${PKG}/"
+          cp proxy-models.example.json "${PKG}/"
+          cp README.md "${PKG}/" 2>/dev/null || true
+
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            7z a -tzip "${PKG}.zip" "${PKG}"
+            echo "archive=${PKG}.zip" >> "$GITHUB_ENV"
+          else
+            tar czf "${PKG}.tar.gz" "${PKG}"
+            echo "archive=${PKG}.tar.gz" >> "$GITHUB_ENV"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: codex-bridge-${{ runner.os }}
+          path: ${{ env.archive }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Generate checksums
+        run: sha256sum codex-bridge-* > checksums.txt
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            codex-bridge-*
+            checksums.txt
+          generate_release_notes: true
