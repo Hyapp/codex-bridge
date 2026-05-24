@@ -7,6 +7,11 @@
 </p>
 
 <p align="center">
+  <em>Fork of <a href="https://github.com/wujfeng712-ui/codex-bridge">wujfeng712-ui/codex-bridge</a> —
+  with CI/CD, portable Windows builds, and enhanced thinking-mode fixes.</em>
+</p>
+
+<p align="center">
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-18%2B-339933?logo=node.js&logoColor=white" alt="Node.js 18+"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
   <img src="https://img.shields.io/badge/dependencies-0-brightgreen" alt="Zero Dependencies">
@@ -87,6 +92,24 @@ Set the auth key for Codex:
 > **Using [CC Switch](https://github.com/farion1231/cc-switch)?** Skip the manual edit — add a provider in the GUI instead. See [Using with CC Switch](#using-with-cc-switch).
 
 Run `codex` — done.
+
+## Portable Binary (Windows)
+
+Download the latest `codex-bridge-Windows-v*.zip` from [Releases](https://github.com/Hyapp/codex-bridge/releases).
+
+```bash
+# 1. Extract
+unzip codex-bridge-Windows-*.zip
+
+# 2. Configure
+cp env.example .env
+# Edit .env — set your PROXY_AUTH_KEY and DEEPSEEK_API_KEY
+
+# 3. Run (no Node.js needed)
+.\codex-bridge.exe
+```
+
+The `.env` file is loaded automatically from the same directory as the executable. You can also set environment variables the usual way — they take precedence over `.env`.
 
 ## Architecture
 
@@ -261,9 +284,35 @@ cc-switch use codex-bridge
 
 ## Requirements
 
-- Node.js 18+
+- Node.js 18+ (source) or none (portable binary)
 - macOS / Linux / Windows
 - At least one upstream API key (DeepSeek, MiMo, or OpenAI)
+
+## Building from Source
+
+Package `proxy.mjs` into a standalone executable with [Node SEA](https://nodejs.org/api/single-executable-applications.html) (requires Node.js 20+):
+
+```bash
+# Install postject (one-time)
+npm install -g postject
+
+# Build SEA blob
+node -e "fs.writeFileSync('sea-config.json',JSON.stringify({main:'proxy.mjs',output:'sea-prep.blob'}))"
+node --experimental-sea-config sea-config.json
+
+# Windows
+copy "%ProgramFiles%\nodejs\node.exe" codex-bridge.exe
+# macOS / Linux
+cp "$(which node)" codex-bridge
+
+# Remove digital signature (Windows only)
+signtool remove /s codex-bridge.exe
+
+# Inject blob
+postject codex-bridge NODE_SEA_BLOB sea-prep.blob --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2
+```
+
+On **GitHub Actions** the build happens automatically when you push a version tag (`git tag v1.0.0 && git push origin v1.0.0`).
 
 ## License
 

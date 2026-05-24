@@ -63,6 +63,7 @@ jobs:
           mkdir -p "${PKG}"
           cp "codex-bridge${EXT}" "${PKG}/"
           cp LICENSE "${PKG}/"
+          cp env.example "${PKG}/"
           cp proxy-models.example.json "${PKG}/"
           cp README.md "${PKG}/" 2>/dev/null || true
 

@@ -1,7 +1,44 @@
 import http from "node:http";
 import crypto from "node:crypto";
 import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { execSync } from "node:child_process";
+
+// ── .env auto-loader ──
+// Portable (SEA) binaries can't use --env-file, so we load .env from the
+// executable's directory, the script's directory, or cwd (first found wins).
+(() => {
+  try {
+    const candidates = [
+      path.dirname(process.execPath),
+      path.dirname(fileURLToPath(import.meta.url)),
+      process.cwd(),
+    ];
+    const seen = new Set();
+    for (const dir of candidates) {
+      if (seen.has(dir)) continue;
+      seen.add(dir);
+      const envFile = path.join(dir, ".env");
+      if (!fs.existsSync(envFile)) continue;
+      for (const raw of fs.readFileSync(envFile, "utf8").split("\n")) {
+        const line = raw.trim();
+        if (!line || line.startsWith("#")) continue;
+        const eq = line.indexOf("=");
+        if (eq === -1) continue;
+        const key = line.slice(0, eq).trim();
+        let val = line.slice(eq + 1).trim();
+        if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+          val = val.slice(1, -1);
+        }
+        if (key && !Object.prototype.hasOwnProperty.call(process.env, key)) {
+          process.env[key] = val;
+        }
+      }
+      break; // first .env wins
+    }
+  } catch { /* best-effort */ }
+})();
 
 process.on("uncaughtException", (err) => {
   log.error("[proxy] uncaught exception:", err.message);
