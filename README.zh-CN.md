@@ -39,7 +39,7 @@ codex-bridge 在两者之间双向转换 —— 包含流式 SSE、工具调用�
 - **会话延续** —— `previous_response_id` 跨供应商可用（基于 LRU 上限的存储）
 - **内置 `web_fetch` 工具** —— 在 URL 密集场景下绕过沙箱限制
 - **工具调用熔断器** —— 软警告 + 硬剥离，防止工具调用死循环
-- **单文件零依赖** —— 仅一个 `proxy.mjs`（约 2000 行），无需 `npm install`
+- **单文件零依赖** —— 仅一个 `proxy.cjs`（约 2000 行），无需 `npm install`
 
 ## 快速开始
 
@@ -61,7 +61,7 @@ DEEPSEEK_API_KEY=sk-...                                  # 来自 platform.deeps
 ### 2. 启动代理
 
 ```bash
-node --env-file=.env proxy.mjs
+node --env-file=.env proxy.cjs
 ```
 
 > 使用 Node 18–19 或后台模式？请参阅 [进阶用法](#进阶用法)。
@@ -262,11 +262,11 @@ cc-switch use codex-bridge
 
 - **Node 18–19 启动** —— `--env-file` 在 Node 20 才引入。旧版本请使用：
   ```bash
-  set -a && source .env && set +a && node proxy.mjs
+  set -a && source .env && set +a && node proxy.cjs
   ```
 - **后台模式**：
   ```bash
-  nohup node --env-file=.env proxy.mjs > /tmp/codex-bridge.log 2>&1 &
+  nohup node --env-file=.env proxy.cjs > /tmp/codex-bridge.log 2>&1 &
   ```
 - **多密钥锁定供应商** —— 为每个入站密钥指定固定供应商，便于多配置场景。`PROXY_KEYS` 格式参见 `env.example`。
 - **模型清单单一来源** —— 将 `MODEL_CATALOG_PATH` 指向 Codex 使用的同一份 JSON（`config.toml` 中的 `model_catalog_json`），自动保持模型列表同步。
@@ -277,20 +277,20 @@ cc-switch use codex-bridge
 |---|---|---|
 | `EADDRINUSE :4000` | 端口被占用 | `lsof -ti:4000 \| xargs kill` 或在 `.env` 中更改 `PROXY_PORT` |
 | `401 Unauthorized` | 鉴权密钥不匹配 | 确认 `~/.codex/auth.json` 中的 `OPENAI_API_KEY` 与 `.env` 中的 `PROXY_AUTH_KEY` 一致 |
-| `--env-file: not recognized` | Node.js 版本 < 20 | 使用 `set -a && source .env && set +a && node proxy.mjs` |
+| `--env-file: not recognized` | Node.js 版本 < 20 | 使用 `set -a && source .env && set +a && node proxy.cjs` |
 | 上游超时 | 供应商响应慢 | 在 `.env` 中增大 `UPSTREAM_TIMEOUT_MS`（默认 120 000 ms） |
 | 模型未找到 | 模型不在 `*_MODELS` 列表中 | 添加到 `DEEPSEEK_MODELS` / `MIMO_MODELS` / `OPENAI_MODELS`，或使用 `MODEL_CATALOG_PATH` |
 
 ## 从源码构建
 
-使用 [Node SEA](https://nodejs.org/api/single-executable-applications.html) 将 `proxy.mjs` 打包为独立可执行文件（需要 Node.js 20+）：
+使用 [Node SEA](https://nodejs.org/api/single-executable-applications.html) 将 `proxy.cjs` 打包为独立可执行文件（需要 Node.js 20+）：
 
 ```bash
 # 安装 postject（一次性）
 npm install -g postject
 
 # 构建 SEA blob
-node -e "fs.writeFileSync('sea-config.json',JSON.stringify({main:'proxy.mjs',output:'sea-prep.blob'}))"
+node -e "fs.writeFileSync('sea-config.json',JSON.stringify({main:'proxy.cjs',output:'sea-prep.blob'}))"
 node --experimental-sea-config sea-config.json
 
 # Windows

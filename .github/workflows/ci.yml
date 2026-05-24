@@ -11,7 +11,7 @@ jobs:
         with:
           node-version: 22
       - name: Check syntax
-        run: node --check proxy.mjs
+        run: node --check proxy.cjs
       - name: Validate example JSON
         run: |
           node -e "JSON.parse(fs.readFileSync('proxy-models.example.json','utf8'))"
@@ -43,7 +43,7 @@ jobs:
             exit 0
           fi
           export PROXY_AUTH_KEY DEEPSEEK_API_KEY
-          node proxy.mjs &
+          node proxy.cjs &
           PROXY_PID=$!
           sleep 2
           ./scripts/smoke.sh

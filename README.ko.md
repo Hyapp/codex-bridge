@@ -39,7 +39,7 @@ codex-bridge는 둘 사이를 양방향으로 변환합니다 — 스트리밍 S
 - **세션 연속성** — `previous_response_id`가 공급자 간에 작동 (LRU 제한 저장소)
 - **내장 `web_fetch` 도구** — URL 다용 시나리오에서 샌드박스 제한 우회
 - **도구 호출 회로 차단기** — 소프트 경고 + 하드 제거로 폭주 루프 방지
-- **단일 파일, 무의존성** — `proxy.mjs` 1개 (~2000줄), `npm install` 불필요
+- **단일 파일, 무의존성** — `proxy.cjs` 1개 (~2000줄), `npm install` 불필요
 
 ## 빠른 시작
 
@@ -61,7 +61,7 @@ DEEPSEEK_API_KEY=sk-...                                  # platform.deepseek.com
 ### 2. 프록시 시작
 
 ```bash
-node --env-file=.env proxy.mjs
+node --env-file=.env proxy.cjs
 ```
 
 > Node 18–19 또는 백그라운드 모드가 필요한가요? [Advanced Usage](#advanced-usage) 참조.
@@ -262,11 +262,11 @@ cc-switch use codex-bridge
 
 - **Node 18–19 시작** — `--env-file`은 Node 20에서 추가됨. 이전 버전에서는:
   ```bash
-  set -a && source .env && set +a && node proxy.mjs
+  set -a && source .env && set +a && node proxy.cjs
   ```
 - **백그라운드 모드**:
   ```bash
-  nohup node --env-file=.env proxy.mjs > /tmp/codex-bridge.log 2>&1 &
+  nohup node --env-file=.env proxy.cjs > /tmp/codex-bridge.log 2>&1 &
   ```
 - **다중 키 공급자 잠금** — 각 인바운드 키를 특정 공급자에 고정. 다중 프로파일 설정용. `PROXY_KEYS` 형식은 `env.example` 참조.
 - **모델 카탈로그 단일 출처** — `MODEL_CATALOG_PATH`를 Codex의 `model_catalog_json`과 동일 JSON에 가리켜 모델 목록 자동 동기화.
@@ -277,20 +277,20 @@ cc-switch use codex-bridge
 |---|---|---|
 | `EADDRINUSE :4000` | 포트 사용 중 | `lsof -ti:4000 \| xargs kill` 또는 `.env`에서 `PROXY_PORT` 변경 |
 | `401 Unauthorized` | 인증 키 불일치 | `~/.codex/auth.json`의 `OPENAI_API_KEY`가 `.env`의 `PROXY_AUTH_KEY`와 일치하는지 확인 |
-| `--env-file: not recognized` | Node.js < 20 | `set -a && source .env && set +a && node proxy.mjs` 사용 |
+| `--env-file: not recognized` | Node.js < 20 | `set -a && source .env && set +a && node proxy.cjs` 사용 |
 | 업스트림 타임아웃 | 공급자 응답 지연 | `.env`에서 `UPSTREAM_TIMEOUT_MS` 증가 (기본 120 000 ms) |
 | 모델을 찾을 수 없음 | `*_MODELS`에 미등록 | `DEEPSEEK_MODELS` / `MIMO_MODELS` / `OPENAI_MODELS`에 추가하거나 `MODEL_CATALOG_PATH` 사용 |
 
 ## 소스에서 빌드하기
 
-`proxy.mjs`를 [Node SEA](https://nodejs.org/api/single-executable-applications.html)로 독립 실행형 바이너리로 패키징합니다 (Node.js 20+ 필요):
+`proxy.cjs`를 [Node SEA](https://nodejs.org/api/single-executable-applications.html)로 독립 실행형 바이너리로 패키징합니다 (Node.js 20+ 필요):
 
 ```bash
 # postject 설치 (최초 1회)
 npm install -g postject
 
 # SEA blob 빌드
-node -e "fs.writeFileSync('sea-config.json',JSON.stringify({main:'proxy.mjs',output:'sea-prep.blob'}))"
+node -e "fs.writeFileSync('sea-config.json',JSON.stringify({main:'proxy.cjs',output:'sea-prep.blob'}))"
 node --experimental-sea-config sea-config.json
 
 # Windows

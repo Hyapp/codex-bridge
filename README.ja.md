@@ -39,7 +39,7 @@ codex-bridge は両者を双方向に変換します — ストリーミング S
 - **セッション継続** — `previous_response_id` をプロバイダー横断で利用可能（LRU 制限ストア）
 - **組み込み `web_fetch` ツール** — URL 多用シナリオでサンドボックス制限を回避
 - **ツール呼び出しサーキットブレーカー** — ソフト警告 + ハード剥離で暴走ループを防止
-- **シングルファイル・ゼロ依存** — `proxy.mjs` 1 本（約 2000 行）、`npm install` 不要
+- **シングルファイル・ゼロ依存** — `proxy.cjs` 1 本（約 2000 行）、`npm install` 不要
 
 ## クイックスタート
 
@@ -61,7 +61,7 @@ DEEPSEEK_API_KEY=sk-...                                  # platform.deepseek.com
 ### 2. プロキシを起動
 
 ```bash
-node --env-file=.env proxy.mjs
+node --env-file=.env proxy.cjs
 ```
 
 > Node 18–19 やバックグラウンド実行は [Advanced Usage](#advanced-usage) を参照。
@@ -262,11 +262,11 @@ cc-switch use codex-bridge
 
 - **Node 18–19 起動** — `--env-file` は Node 20 で追加されました。旧バージョンでは：
   ```bash
-  set -a && source .env && set +a && node proxy.mjs
+  set -a && source .env && set +a && node proxy.cjs
   ```
 - **バックグラウンド実行**：
   ```bash
-  nohup node --env-file=.env proxy.mjs > /tmp/codex-bridge.log 2>&1 &
+  nohup node --env-file=.env proxy.cjs > /tmp/codex-bridge.log 2>&1 &
   ```
 - **マルチキーのプロバイダーロック** — 各インバウンドキーを特定プロバイダーに固定。マルチプロファイル構成向け。`PROXY_KEYS` の書式は `env.example` を参照。
 - **モデルカタログの単一情報源** — `MODEL_CATALOG_PATH` を Codex の `model_catalog_json` と同じ JSON に向け、モデル一覧を自動同期。
@@ -277,20 +277,20 @@ cc-switch use codex-bridge
 |---|---|---|
 | `EADDRINUSE :4000` | ポートが使用中 | `lsof -ti:4000 \| xargs kill` または `.env` で `PROXY_PORT` を変更 |
 | `401 Unauthorized` | 認証キー不一致 | `~/.codex/auth.json` の `OPENAI_API_KEY` が `.env` の `PROXY_AUTH_KEY` と一致しているか確認 |
-| `--env-file: not recognized` | Node.js < 20 | `set -a && source .env && set +a && node proxy.mjs` を使用 |
+| `--env-file: not recognized` | Node.js < 20 | `set -a && source .env && set +a && node proxy.cjs` を使用 |
 | 上流タイムアウト | プロバイダーの応答が遅い | `.env` の `UPSTREAM_TIMEOUT_MS` を増加（デフォルト 120 000 ms） |
 | モデルが見つからない | `*_MODELS` に未登録 | `DEEPSEEK_MODELS` / `MIMO_MODELS` / `OPENAI_MODELS` に追加、または `MODEL_CATALOG_PATH` を使用 |
 
 ## ソースからビルド
 
-`proxy.mjs` を [Node SEA](https://nodejs.org/api/single-executable-applications.html) でスタンドアロン実行可能ファイルにパッケージ化します（Node.js 20+ が必要）：
+`proxy.cjs` を [Node SEA](https://nodejs.org/api/single-executable-applications.html) でスタンドアロン実行可能ファイルにパッケージ化します（Node.js 20+ が必要）：
 
 ```bash
 # postject をインストール（初回のみ）
 npm install -g postject
 
 # SEA blob をビルド
-node -e "fs.writeFileSync('sea-config.json',JSON.stringify({main:'proxy.mjs',output:'sea-prep.blob'}))"
+node -e "fs.writeFileSync('sea-config.json',JSON.stringify({main:'proxy.cjs',output:'sea-prep.blob'}))"
 node --experimental-sea-config sea-config.json
 
 # Windows

@@ -40,7 +40,7 @@ codex-bridge translates between them in both directions — streaming SSE, tool 
 - **Session continuity** — `previous_response_id` works across providers (LRU-bounded store)
 - **Built-in `web_fetch` tool** — bypasses sandbox restrictions for URL-heavy conversations
 - **Tool-call circuit breaker** — soft warning + hard tool stripping on runaway tool loops
-- **Single-file, zero dependencies** — one `proxy.mjs` (~2000 lines), no `npm install`
+- **Single-file, zero dependencies** — one `proxy.cjs` (~2000 lines), no `npm install`
 
 ## Quick Start
 
@@ -62,7 +62,7 @@ DEEPSEEK_API_KEY=sk-...                                  # from platform.deepsee
 ### 2. Start the proxy
 
 ```bash
-node --env-file=.env proxy.mjs
+node --env-file=.env proxy.cjs
 ```
 
 > Need Node 18–19 or background mode? See [Advanced Usage](#advanced-usage).
@@ -263,11 +263,11 @@ cc-switch use codex-bridge
 
 - **Node 18–19 startup** — `--env-file` was added in Node 20. On older versions:
   ```bash
-  set -a && source .env && set +a && node proxy.mjs
+  set -a && source .env && set +a && node proxy.cjs
   ```
 - **Background mode**:
   ```bash
-  nohup node --env-file=.env proxy.mjs > /tmp/codex-bridge.log 2>&1 &
+  nohup node --env-file=.env proxy.cjs > /tmp/codex-bridge.log 2>&1 &
   ```
 - **Multi-key provider locking** — assign each inbound key to a specific provider for multi-profile setups. See `env.example` for the `PROXY_KEYS` format.
 - **Model catalog single source of truth** — point `MODEL_CATALOG_PATH` at the same JSON file Codex uses (`model_catalog_json` in `config.toml`) to keep model lists in sync automatically.
@@ -278,7 +278,7 @@ cc-switch use codex-bridge
 |---|---|---|
 | `EADDRINUSE :4000` | Port already in use | `lsof -ti:4000 \| xargs kill` or change `PROXY_PORT` in `.env` |
 | `401 Unauthorized` | Auth key mismatch | Ensure `OPENAI_API_KEY` in `~/.codex/auth.json` matches `PROXY_AUTH_KEY` in `.env` |
-| `--env-file: not recognized` | Node.js < 20 | Use `set -a && source .env && set +a && node proxy.mjs` |
+| `--env-file: not recognized` | Node.js < 20 | Use `set -a && source .env && set +a && node proxy.cjs` |
 | Upstream timeout | Slow provider response | Increase `UPSTREAM_TIMEOUT_MS` in `.env` (default 120 000 ms) |
 | Model not found | Model not in any `*_MODELS` list | Add it to `DEEPSEEK_MODELS` / `MIMO_MODELS` / `OPENAI_MODELS`, or use `MODEL_CATALOG_PATH` |
 
@@ -290,14 +290,14 @@ cc-switch use codex-bridge
 
 ## Building from Source
 
-Package `proxy.mjs` into a standalone executable with [Node SEA](https://nodejs.org/api/single-executable-applications.html) (requires Node.js 20+):
+Package `proxy.cjs` into a standalone executable with [Node SEA](https://nodejs.org/api/single-executable-applications.html) (requires Node.js 20+):
 
 ```bash
 # Install postject (one-time)
 npm install -g postject
 
 # Build SEA blob
-node -e "fs.writeFileSync('sea-config.json',JSON.stringify({main:'proxy.mjs',output:'sea-prep.blob'}))"
+node -e "fs.writeFileSync('sea-config.json',JSON.stringify({main:'proxy.cjs',output:'sea-prep.blob'}))"
 node --experimental-sea-config sea-config.json
 
 # Windows

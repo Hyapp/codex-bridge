@@ -1,9 +1,9 @@
-import http from "node:http";
-import crypto from "node:crypto";
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { execSync } from "node:child_process";
+const http = require("node:http");
+const crypto = require("node:crypto");
+const fs = require("node:fs");
+const path = require("node:path");
+const { fileURLToPath } = require("node:url");
+const { execSync } = require("node:child_process");
 
 // ── .env auto-loader ──
 // Portable (SEA) binaries can't use --env-file, so we load .env from the
