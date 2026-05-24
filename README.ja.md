@@ -6,6 +6,11 @@
 </p>
 
 <p align="center">
+  <em><a href="https://github.com/wujfeng712-ui/codex-bridge">wujfeng712-ui/codex-bridge</a> のフォーク —
+  CI/CD、Windows ポータブルビルド、拡張された思考モード修正を搭載。</em>
+</p>
+
+<p align="center">
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-18%2B-339933?logo=node.js&logoColor=white" alt="Node.js 18+"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
   <img src="https://img.shields.io/badge/dependencies-0-brightgreen" alt="Zero Dependencies">
@@ -86,6 +91,24 @@ Codex 用の認証キーを設定：
 > **[CC Switch](https://github.com/farion1231/cc-switch) をお使いですか？** 手動編集の代わりに GUI でプロバイダーを追加できます。[CC Switch との連携](#cc-switch-との連携) を参照。
 
 `codex` を実行 — 完了。
+
+## ポータブルバイナリ（Windows）
+
+最新の `codex-bridge-Windows-v*.zip` を [Releases](https://github.com/Hyapp/codex-bridge/releases) からダウンロード。
+
+```bash
+# 1. 解凍
+unzip codex-bridge-Windows-*.zip
+
+# 2. 設定
+cp env.example .env
+# .env を編集 — PROXY_AUTH_KEY と DEEPSEEK_API_KEY を設定
+
+# 3. 実行（Node.js 不要）
+.\codex-bridge.exe
+```
+
+`.env` ファイルは実行ファイルと同じディレクトリから自動的に読み込まれます。環境変数を直接設定することもできます（`.env` より優先）。
 
 ## アーキテクチャ
 
@@ -257,6 +280,32 @@ cc-switch use codex-bridge
 | `--env-file: not recognized` | Node.js < 20 | `set -a && source .env && set +a && node proxy.mjs` を使用 |
 | 上流タイムアウト | プロバイダーの応答が遅い | `.env` の `UPSTREAM_TIMEOUT_MS` を増加（デフォルト 120 000 ms） |
 | モデルが見つからない | `*_MODELS` に未登録 | `DEEPSEEK_MODELS` / `MIMO_MODELS` / `OPENAI_MODELS` に追加、または `MODEL_CATALOG_PATH` を使用 |
+
+## ソースからビルド
+
+`proxy.mjs` を [Node SEA](https://nodejs.org/api/single-executable-applications.html) でスタンドアロン実行可能ファイルにパッケージ化します（Node.js 20+ が必要）：
+
+```bash
+# postject をインストール（初回のみ）
+npm install -g postject
+
+# SEA blob をビルド
+node -e "fs.writeFileSync('sea-config.json',JSON.stringify({main:'proxy.mjs',output:'sea-prep.blob'}))"
+node --experimental-sea-config sea-config.json
+
+# Windows
+copy "%ProgramFiles%\nodejs\node.exe" codex-bridge.exe
+# macOS / Linux
+cp "$(which node)" codex-bridge
+
+# デジタル署名を削除（Windows のみ）
+signtool remove /s codex-bridge.exe
+
+# Blob を注入
+postject codex-bridge NODE_SEA_BLOB sea-prep.blob --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2
+```
+
+**GitHub Actions** では、バージョンタグをプッシュすると自動的にビルドされます（`git tag v1.0.0 && git push origin v1.0.0`）。
 
 ## 動作要件
 

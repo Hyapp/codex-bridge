@@ -6,6 +6,11 @@
 </p>
 
 <p align="center">
+  <em><a href="https://github.com/wujfeng712-ui/codex-bridge">wujfeng712-ui/codex-bridge</a>의 포크 —
+  CI/CD, Windows 포터블 빌드, 강화된 사고 모드 수정 포함.</em>
+</p>
+
+<p align="center">
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-18%2B-339933?logo=node.js&logoColor=white" alt="Node.js 18+"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
   <img src="https://img.shields.io/badge/dependencies-0-brightgreen" alt="Zero Dependencies">
@@ -86,6 +91,24 @@ Codex 인증 키 설정:
 > **[CC Switch](https://github.com/farion1231/cc-switch) 사용 중이신가요?** 수동 편집 대신 GUI에서 공급자를 추가하세요. [CC Switch와 함께 사용하기](#cc-switch와-함께-사용하기) 참조.
 
 `codex` 실행 — 완료.
+
+## 포터블 바이너리 (Windows)
+
+최신 `codex-bridge-Windows-v*.zip`을 [Releases](https://github.com/Hyapp/codex-bridge/releases)에서 다운로드하세요.
+
+```bash
+# 1. 압축 풀기
+unzip codex-bridge-Windows-*.zip
+
+# 2. 설정
+cp env.example .env
+# .env 편집 — PROXY_AUTH_KEY와 DEEPSEEK_API_KEY 입력
+
+# 3. 실행 (Node.js 불필요)
+.\codex-bridge.exe
+```
+
+`.env` 파일은 실행 파일과 같은 디렉토리에서 자동으로 로드됩니다. 환경 변수를 직접 설정할 수도 있으며, 환경 변수가 `.env`보다 우선합니다.
 
 ## 아키텍처
 
@@ -257,6 +280,32 @@ cc-switch use codex-bridge
 | `--env-file: not recognized` | Node.js < 20 | `set -a && source .env && set +a && node proxy.mjs` 사용 |
 | 업스트림 타임아웃 | 공급자 응답 지연 | `.env`에서 `UPSTREAM_TIMEOUT_MS` 증가 (기본 120 000 ms) |
 | 모델을 찾을 수 없음 | `*_MODELS`에 미등록 | `DEEPSEEK_MODELS` / `MIMO_MODELS` / `OPENAI_MODELS`에 추가하거나 `MODEL_CATALOG_PATH` 사용 |
+
+## 소스에서 빌드하기
+
+`proxy.mjs`를 [Node SEA](https://nodejs.org/api/single-executable-applications.html)로 독립 실행형 바이너리로 패키징합니다 (Node.js 20+ 필요):
+
+```bash
+# postject 설치 (최초 1회)
+npm install -g postject
+
+# SEA blob 빌드
+node -e "fs.writeFileSync('sea-config.json',JSON.stringify({main:'proxy.mjs',output:'sea-prep.blob'}))"
+node --experimental-sea-config sea-config.json
+
+# Windows
+copy "%ProgramFiles%\nodejs\node.exe" codex-bridge.exe
+# macOS / Linux
+cp "$(which node)" codex-bridge
+
+# 디지털 서명 제거 (Windows 전용)
+signtool remove /s codex-bridge.exe
+
+# Blob 주입
+postject codex-bridge NODE_SEA_BLOB sea-prep.blob --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2
+```
+
+**GitHub Actions**에서는 버전 태그를 푸시하면 자동으로 빌드됩니다 (`git tag v1.0.0 && git push origin v1.0.0`).
 
 ## 요구사항
 

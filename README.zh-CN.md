@@ -6,6 +6,11 @@
 </p>
 
 <p align="center">
+  <em>基于 <a href="https://github.com/wujfeng712-ui/codex-bridge">wujfeng712-ui/codex-bridge</a> 复刻 —
+  集成 CI/CD、Windows 便携构建与增强的思考模式修复。</em>
+</p>
+
+<p align="center">
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-18%2B-339933?logo=node.js&logoColor=white" alt="Node.js 18+"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
   <img src="https://img.shields.io/badge/dependencies-0-brightgreen" alt="Zero Dependencies">
@@ -86,6 +91,24 @@ requires_openai_auth = true
 > **使用 [CC Switch](https://github.com/farion1231/cc-switch)？** 无需手动编辑，直接在 GUI 中添加供应商即可。详见 [配合 CC Switch 使用](#配合-cc-switch-使用)。
 
 运行 `codex` —— 完成。
+
+## 便携二进制（Windows）
+
+从 [Releases](https://github.com/Hyapp/codex-bridge/releases) 下载最新的 `codex-bridge-Windows-v*.zip`。
+
+```bash
+# 1. 解压
+unzip codex-bridge-Windows-*.zip
+
+# 2. 配置
+cp env.example .env
+# 编辑 .env — 填入你的 PROXY_AUTH_KEY 和 DEEPSEEK_API_KEY
+
+# 3. 运行（无需 Node.js）
+.\codex-bridge.exe
+```
+
+`.env` 文件会自动从可执行文件所在目录加载。你也可以直接设置环境变量——它们优先于 `.env`。
 
 ## 架构
 
@@ -257,6 +280,32 @@ cc-switch use codex-bridge
 | `--env-file: not recognized` | Node.js 版本 < 20 | 使用 `set -a && source .env && set +a && node proxy.mjs` |
 | 上游超时 | 供应商响应慢 | 在 `.env` 中增大 `UPSTREAM_TIMEOUT_MS`（默认 120 000 ms） |
 | 模型未找到 | 模型不在 `*_MODELS` 列表中 | 添加到 `DEEPSEEK_MODELS` / `MIMO_MODELS` / `OPENAI_MODELS`，或使用 `MODEL_CATALOG_PATH` |
+
+## 从源码构建
+
+使用 [Node SEA](https://nodejs.org/api/single-executable-applications.html) 将 `proxy.mjs` 打包为独立可执行文件（需要 Node.js 20+）：
+
+```bash
+# 安装 postject（一次性）
+npm install -g postject
+
+# 构建 SEA blob
+node -e "fs.writeFileSync('sea-config.json',JSON.stringify({main:'proxy.mjs',output:'sea-prep.blob'}))"
+node --experimental-sea-config sea-config.json
+
+# Windows
+copy "%ProgramFiles%\nodejs\node.exe" codex-bridge.exe
+# macOS / Linux
+cp "$(which node)" codex-bridge
+
+# 移除数字签名（仅 Windows）
+signtool remove /s codex-bridge.exe
+
+# 注入 blob
+postject codex-bridge NODE_SEA_BLOB sea-prep.blob --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2
+```
+
+在 **GitHub Actions** 上，推送版本标签时会自动构建（`git tag v1.0.0 && git push origin v1.0.0`）。
 
 ## 环境要求
 

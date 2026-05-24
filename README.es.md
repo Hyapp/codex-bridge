@@ -7,6 +7,11 @@
 </p>
 
 <p align="center">
+  <em>Fork de <a href="https://github.com/wujfeng712-ui/codex-bridge">wujfeng712-ui/codex-bridge</a> —
+  con CI/CD, builds portátiles para Windows y mejoras en el modo de pensamiento.</em>
+</p>
+
+<p align="center">
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-18%2B-339933?logo=node.js&logoColor=white" alt="Node.js 18+"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
   <img src="https://img.shields.io/badge/dependencies-0-brightgreen" alt="Zero Dependencies">
@@ -87,6 +92,24 @@ Configura la clave de autenticación para Codex:
 > **¿Usas [CC Switch](https://github.com/farion1231/cc-switch)?** Omite la edición manual — añade un proveedor desde la GUI. Ver [Uso con CC Switch](#uso-con-cc-switch).
 
 Ejecuta `codex` — listo.
+
+## Binario portátil (Windows)
+
+Descarga el último `codex-bridge-Windows-v*.zip` desde [Releases](https://github.com/Hyapp/codex-bridge/releases).
+
+```bash
+# 1. Extraer
+unzip codex-bridge-Windows-*.zip
+
+# 2. Configurar
+cp env.example .env
+# Edita .env — introduce tu PROXY_AUTH_KEY y DEEPSEEK_API_KEY
+
+# 3. Ejecutar (sin Node.js)
+.\codex-bridge.exe
+```
+
+El archivo `.env` se carga automáticamente desde el mismo directorio del ejecutable. También puedes establecer variables de entorno directamente — tienen prioridad sobre `.env`.
 
 ## Arquitectura
 
@@ -258,6 +281,32 @@ cc-switch use codex-bridge
 | `--env-file: not recognized` | Node.js < 20 | Usa `set -a && source .env && set +a && node proxy.mjs` |
 | Timeout upstream | Respuesta lenta del proveedor | Aumenta `UPSTREAM_TIMEOUT_MS` en `.env` (por defecto 120 000 ms) |
 | Modelo no encontrado | Modelo no está en `*_MODELS` | Añádelo a `DEEPSEEK_MODELS` / `MIMO_MODELS` / `OPENAI_MODELS`, o usa `MODEL_CATALOG_PATH` |
+
+## Compilar desde la fuente
+
+Empaqueta `proxy.mjs` en un ejecutable independiente con [Node SEA](https://nodejs.org/api/single-executable-applications.html) (requiere Node.js 20+):
+
+```bash
+# Instalar postject (una vez)
+npm install -g postject
+
+# Generar blob SEA
+node -e "fs.writeFileSync('sea-config.json',JSON.stringify({main:'proxy.mjs',output:'sea-prep.blob'}))"
+node --experimental-sea-config sea-config.json
+
+# Windows
+copy "%ProgramFiles%\nodejs\node.exe" codex-bridge.exe
+# macOS / Linux
+cp "$(which node)" codex-bridge
+
+# Eliminar firma digital (solo Windows)
+signtool remove /s codex-bridge.exe
+
+# Inyectar blob
+postject codex-bridge NODE_SEA_BLOB sea-prep.blob --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2
+```
+
+En **GitHub Actions** la compilación ocurre automáticamente al empujar un tag de versión (`git tag v1.0.0 && git push origin v1.0.0`).
 
 ## Requisitos
 
