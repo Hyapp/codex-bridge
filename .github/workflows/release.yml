@@ -41,7 +41,7 @@ jobs:
 
           # Windows: remove digital signature before injection
           if [[ "${{ runner.os }}" == "Windows" ]]; then
-            SIGTOOL=$(find "C:/Program Files (x86)/Windows Kits/10/bin" -name "signtool.exe" 2>/dev/null | head -1)
+            SIGTOOL=$(find "C:/Program Files (x86)/Windows Kits/10/bin" -name "signtool.exe" 2>/dev/null | grep -v arm64 | head -1)
             if [[ -n "$SIGTOOL" ]]; then
               "${SIGTOOL}" remove /s "${BINARY}"
             else
