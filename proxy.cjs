@@ -2,7 +2,6 @@ const http = require("node:http");
 const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
-const { fileURLToPath } = require("node:url");
 const { execSync } = require("node:child_process");
 
 // ── .env auto-loader ──
@@ -12,7 +11,7 @@ const { execSync } = require("node:child_process");
   try {
     const candidates = [
       path.dirname(process.execPath),
-      path.dirname(fileURLToPath(import.meta.url)),
+      __dirname,
       process.cwd(),
     ];
     const seen = new Set();
