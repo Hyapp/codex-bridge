@@ -152,9 +152,23 @@ function getGithubToken() {
   return _githubToken;
 }
 
-if (!DEEPSEEK_KEY && !OPENAI_KEY && !MIMO_KEY) {
-  console.error("At least one upstream provider key is required: set DEEPSEEK_API_KEY, MIMO_API_KEY, and/or OPENAI_API_KEY");
+function fatalExit(...msg) {
+  console.error(...msg);
+  if (process.platform === "win32") {
+    try { execSync("pause", { shell: true, stdio: "inherit" }); } catch {}
+  }
   process.exit(1);
+}
+
+if (!DEEPSEEK_KEY && !OPENAI_KEY && !MIMO_KEY) {
+  fatalExit(
+    "Fatal: No upstream API key configured.\n",
+    "  Create a .env file next to this executable with at least one of:\n",
+    "    DEEPSEEK_API_KEY=sk-...\n",
+    "    MIMO_API_KEY=...\n",
+    "    OPENAI_API_KEY=sk-...\n",
+    "  A template is available in env.example (same directory)."
+  );
 }
 
 // Optional: read MODEL_CATALOG_PATH (the same proxy-models.json Codex uses) so the
@@ -2138,6 +2152,13 @@ server.timeout = 0;
 server.keepAliveTimeout = 300000;
 server.headersTimeout = 300000;
 server.requestTimeout = 0;
+
+server.on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    fatalExit(`Fatal: Port ${PORT} is already in use. Change PROXY_PORT in .env or stop the other process.`);
+  }
+  fatalExit(`Fatal: Server error: ${err.message}`);
+});
 
 server.listen(PORT, () => {
   console.log(`[codex-bridge] Listening on http://localhost:${PORT}`);

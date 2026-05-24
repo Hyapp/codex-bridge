@@ -24,6 +24,7 @@ jobs:
       - name: Build SEA blob
         shell: bash
         run: |
+          echo '{"type":"module"}' > package.json
           node -e "fs.writeFileSync('sea-config.json',JSON.stringify({main:'proxy.mjs',output:'sea-prep.blob'}))"
 
       - name: Generate SEA blob
