@@ -43,7 +43,7 @@ jobs:
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             SIGTOOL=$(find "C:/Program Files (x86)/Windows Kits/10/bin" -name "signtool.exe" 2>/dev/null | grep -v arm64 | head -1)
             if [[ -n "$SIGTOOL" ]]; then
-              "${SIGTOOL}" remove /s "${BINARY}"
+              "${SIGTOOL}" remove //s "${BINARY}"
             else
               echo "warning: signtool not found, attempting postject without signature removal"
             fi
